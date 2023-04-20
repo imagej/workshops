@@ -1,3 +1,3 @@
 Supporting materials for ImageJ workshops
 
-See: http://workshops.imagej.net
+See: https://workshops.imagej.net
