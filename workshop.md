@@ -313,9 +313,9 @@ To solve the first problem, PyImageJ converts different Python data structures d
 
 To solve the second problem, we suggest using metadata-rich data structures like `xarray` to encode the dimensions within your datasets.
 
-## Addendum 2: Jupyter Notebook
+## Addendum 3: Jupyter Notebook
 
-Jupyter Notebooks provide a fantastic interactive setting for constructing sharable workflows, and we can utilize PyImageJ in Jupyter just as we have earlier in the workshop.
+Jupyter Notebooks provide a powerful interactive setting for constructing sharable workflows, and we can utilize PyImageJ in Jupyter just as we have earlier in the workshop.
 
 To experiment with Jupyter, we must first install it, which we can do with the following command:
 
@@ -323,7 +323,7 @@ To experiment with Jupyter, we must first install it, which we can do with the f
 $ mamba install -y -c conda-forge jupyter
 ```
 
-We can then start Jupyter using the following command, which will start a Jupyter server, opened in your default browser:
+We then start Jupyter, which will start a Jupyter server, opened in your default browser:
 
 ```bash
 $ jupyter notebook
@@ -337,3 +337,22 @@ In the first cell, you can initialize an ImageJ/Fiji instance, *exactly as we di
 import imagej
 ij = imagej.init("sc.fiji:fiji:2.15.0")
 ```
+Jupyter users will find PyImageJ utility function `ij.py.show` particularly useful, as it will display an image in a matplotlib plot. This script, modified from section 3.2, can be pasted directly into the next cell.
+
+```python
+from skimage.io import imread
+
+ij = imagej.init("sc.fiji:fiji:1.15.0")
+
+p_img = imread("https://media.imagej.net/workshops/data/3d/hela_nucleus.tif")
+# Convert our image to Java and do stuff in Fiji
+j_img = ij.py.to_java(p_img)
+j_gaussed = ij.op().filter().gauss(j_img, 10)
+
+# Then convert our image back to Python for display
+gaussed = ij.py.from_java(j_gaussed)
+ij.py.show(gaussed[30, :, :])
+```
+
+Note that `ij.py.show` is capable of showing images stored in *both* Python *and* Java. Can you edit the cell to have PyImageJ display the same slice without the conversion back into Python?
+
