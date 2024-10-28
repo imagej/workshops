@@ -11,27 +11,29 @@ The Python software ecosystem has become a platform of choice for many image ana
 
 *`napari` and ImageJ, working side by side*
 
-## Step 1: Install the necessary components
+## Step 1: Environment Setup
 
-This single line will install all components necessary for this workshop, including:
+This single line taken from the [`napari-imagej` documentation](https://napari.imagej.net/en/0.1.0/Install.html#installing-from-mamba-recommended) will install all components necessary for this workshop, including:
 
 * Python 3.11
 * [`pyimagej`](https://py.imagej.net/), the integration layer between Fiji/ImageJ and Python
-* Java 11, which is necessary to run Fiji/ImageJ
+* Java 8, which is necessary to run Fiji/ImageJ
 * [`napari`](https://napari.org), a popular data viewer for Python 
 * [`napari-imagej`](https://napari.imagej.net), the integration layer between Fiji/ImageJ and `napari`
 
-`mamba create -n fiji-python -c conda-forge python=3.11 napari-imagej=0.1.0 openjdk=11`
+`mamba create -n napari-imagej -c conda-forge python=3.11 napari-imagej=0.1.0 openjdk=8`
 
 This commmand will take a few minutes as `mamba` downloads and installs the components. Once it completes, you can *activate* the environment with:
 
 ```bash
- $ mamba activate fiji-python
+ $ mamba activate napari-imagej
 ```
+
+Then, create a new folder `fiji-python-2024` in a convenient location - this workshop will operate within that folder.
 
 ## Step 2: Create a Fiji instance!
 
-To ensure your environment is properly set up, let's create a Python file `hello_fiji.py`. This file will be used to create an ImageJ2/Fiji instance, and to print the version 
+To ensure your environment is properly set up, let's create a Python file `step2.py`. This file will be used to create an ImageJ2/Fiji instance, and to print the version 
 
 ```python
 import imagej
@@ -43,7 +45,7 @@ print(f"Successfully initialized ImageJ {ij.getVersion()}")
 Running the file, you should see something like the following (a different version is possible) printed out. Note that this can take up to a few minutes, depending on your internet connection, as PyImageJ downloads the latest ImageJ2:
 
 ```bash
-> python hello_fiji.py
+> python step2.py
 Successfully initialized ImageJ 2.16.0/1.54g
 ```
 
@@ -58,7 +60,7 @@ print(f"Successfully initialized Fiji {ij.getVersion()}")
 Note the new parameter `"sc.fiji:fiji:2.15.0"` - it tells PyImageJ to install Fiji v2.15.0, which will get us a bunch of useful ImageJ/Fiji plugins in addition to ImageJ2/ImageJ. We'll use this Fiji installation for the rest of the workshop!
 
 ```bash
-> python hello_fiji.py
+> python step2.py
 Successfully initialized Fiji 2.15.0/1.54f
 ```
 
@@ -67,7 +69,7 @@ Successfully initialized Fiji 2.15.0/1.54f
 If you want to experiment with your Fiji installation before moving on, try running `python` with the `-i` flag, which will provide you with an interactive [REPL](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) after your script finishes running. You can type `exit()` to quit! 
 
 ```bash
-$ python -i hello_fiji.py
+$ python -i step2.py
 ```
 
 ## Step 3: Data Transfer
@@ -76,44 +78,50 @@ Nearly all scientific applications in Python are built around NumPy's `ndarray`s
 
 Unfortunately, ImageJ/Fiji has never heard of an `ndarray`, and instead operates on its own image structures.
 
-Fortunately, PyImageJ provides robust API to transfer data between ImageJ/Fiji structures and `ndarray` structures. The subsections below describe both directions.
+Fortunately, PyImageJ provides robust API to transfer data between ImageJ/Fiji structures and `ndarray` structures. The subsections below describe both directions, with the end goal of blurring an `ndarray` in Fiji and then displaying the result in napari. Of course, your usage of Fiji may be more complicated than blurring an image, but you could replace the blurring with the Fiji behavior of your choice, and the same goes for displaying the result in napari.
 
-### Step 3.1: From Fiji to Python
+### Step 3.1: From Python to Fiji
 
-If you have an image `img` from Fiji that you'd like to display in Python, you can convert it into an `ndarray` using the syntax `ij.py.from_java(img)`.
+If you have an image `img` in Python that you'd like to pass to ImageJ/Fiji, you can convert it into a Java image using the method `ij.py.to_java(img)`. As the goal of PyImageJ is to execute Fiji functionality *on data in Python*, you'll need this method often.
 
-In the script below, an example image `j_img` from Fiji is created using the `IOService`, accessed through `ij.io()`. We then call `ij.py.from_java` to convert it, and use `napari` to display it.
-
-```python
-import imagej
-import napari
-
-ij = imagej.init("sc.fiji:fiji:2.15.0")
-# If you have an image from Fiji...
-j_img = ij.io().open("https://media.imagej.net/workshops/data/3d/hela_nucleus.tif")
-
-# ...you can convert it to a Python ndarray...
-p_img = ij.py.from_java(j_img)
-# ...where you can do more cool things!
-viewer, layer = napari.imshow(p_img)
-
-napari.run()
-```
-
-*Note: There is much more fun to be had with napari in the sections below!*
-
-### Step 3.2: From Python to Fiji
-
-Just as `ij.py.from_java(img)` transfers data from ImageJ/Fiji data structures to NumPy `ndarray`s, `ij.py.to_java(img)` transfers data in the **other direction**. As the goal of PyImageJ is to execute Fiji functionality *on data in Python*, you'll need this method often.
-
-In the script below, an example image `p_img` is generated from scikit-image. We then call `ij.py.to_java` to convert it, and display it in Fiji.
+In the script below, we can `ij.py.from_java` on an example image `p_img`. We can then blur the image using the ImageJ Ops library included in Fiji.
 
 ```python
 import imagej
 import napari
 from skimage.io import imread
 
-ij = imagej.init("sc.fiji:fiji:1.15.0")
+ij = imagej.init("sc.fiji:fiji:2.15.0")
+
+# If you have a ndarray in Python...
+p_img = imread("https://media.imagej.net/workshops/data/3d/hela_nucleus.tif")
+
+# ...you can convert it to Java...
+j_img = ij.py.to_java(p_img)
+# ...to do things in Fiji...
+j_gaussed = ij.op().filter().gauss(j_img, 10)
+print(f"Java image: {j_gaussed}")
+```
+
+Create a new file `step3.py` with the script above, and run the python file:
+
+```bash
+> python step3.py
+ArrayImg [200x200x61]
+```
+
+### Step 3.2: From Fiji to Python
+
+The output `j_gaussed` from the prior script is stored within an `ArrayImg`, which is a data structure from [ImgLib2](https://imagej.net/libs/imglib2/). To convert that `ArrayImg` into something that we can use in Python, we can use the function `ij.py.from_java(j_gaussed)` transfers data in the **other direction**.
+
+The script below is a continuation of the script from Step 3.1, where we convert `j_gaussed` into a `ndarray` and display it in napari:
+
+```python
+import imagej
+import napari
+from skimage.io import imread
+
+ij = imagej.init("sc.fiji:fiji:2.15.0")
 
 # If you have a ndarray in Python...
 p_img = imread("https://media.imagej.net/workshops/data/3d/hela_nucleus.tif")
@@ -123,13 +131,18 @@ j_img = ij.py.to_java(p_img)
 # ...to do things in Fiji...
 j_gaussed = ij.op().filter().gauss(j_img, 10)
 
-# ...and then bring it back to Python for display!
-gaussed = ij.py.from_java(j_gaussed)
-viewer, layer = napari.imshow(gaussed, title="gaussian blur")
-# Uncomment the line below to compare the before/after in napari
-# viewer.add_image(p_img, name="original image")
+# ...and then convert it back to Python
+p_gaussed = ij.py.from_java(j_gaussed)
+# ...to do things in Python
+viewer = napari.view_image(p_gaussed)
 
 napari.run()
+```
+
+Replace the contents of `step3.py` with the script above, and run the python file:
+
+```python
+> python step3.py
 ```
 
 ### A note on `ij.py`
@@ -156,7 +169,7 @@ If know that you **always** want to have metadata on your images you can use the
 
 ImageJ/Fiji enables **reproducibility** and **sharing** through _SciJava scripts_. If you've used Fiji before, you've likely written some yourself! (If you want some reading material for later, check out [this guide](https://syn.mrc-lmb.cam.ac.uk/acardona/fiji-tutorial/#open-script-editor) by Albert Cardona). `ij.py` once again provides a mechanism, `ij.py.run_script`, to run any existing SciJava script.
 
-Here, we'll utilize an existing script for [Richardson-Lucy deconvolution](https://en.wikipedia.org/wiki/Richardson%E2%80%93Lucy_deconvolution), an algorithm that ImageJ Ops performs quite well. Take the code written below, and place it within a file `decon.groovy`:
+Here, we'll utilize an existing script for [Richardson-Lucy deconvolution](https://en.wikipedia.org/wiki/Richardson%E2%80%93Lucy_deconvolution), an algorithm that ImageJ Ops performs quite well:
 
 ```groovy
 #@ OpService ops
@@ -200,7 +213,11 @@ img_f = ops.convert().float32(img)
 result = ops.deconvolve().richardsonLucyTV(img_f, psf, iterations, regularizationFactor)
 ```
 
-Using `ij.py.run_script`, all we have to do is read in the script, and provide our arguments:
+You can follow the steps below to run the script:
+
+1. Create a folder `scripts` within the current directory `fiji-python-2024`
+1. Within the `scripts` folder Create a new file `decon.groovy` containing the above code.
+2. Create a new file `step4.py` with the code below.
 
 ```python
 import imagej
@@ -212,11 +229,10 @@ ij = imagej.init("sc.fiji:fiji:2.15.0")
 input = imread("https://media.imagej.net/workshops/data/3d/hela_nucleus.tif")
 
 # ...and a SciJava script...
-with open("./decon.groovy", "r") as f:
+with open("./scripts/decon.groovy", "r") as f:
     script = "".join(f.readlines())
 
 # ...you can assign that image to the script parameter...
-
 args = {
     "img": input
 }
@@ -225,16 +241,23 @@ result_map = ij.py.run_script("groovy", script, args)
 
 # Note that the result is still a Java object, so we have to convert it back to Python
 result = ij.py.from_java(result_map.getOutput("result"))
-viewer, layer = napari.imshow(result, title="deconvolved")
-# Uncomment the line below to compare the before/after in napari
-# viewer.add_image(input, name="original")
+# ...to do things in Python
+viewer = napari.view_image(result)
+# (add the original for comparison)
+viewer.add_image(input, name="original")
 
 napari.run()
 ```
 
+By running `step4.py`, you should see the HeLa cell deconvolved, with less background noise and more visible internal structure:
+
+```bash
+> python step4.py
+```
+
 Using scripts like this maximizes portability - you can write a workflow in a single SciJava script, and it can be called from Python, and within Fiji!
 
-## Step 5: napari-imagej
+## Step 5: `napari-imagej`
 
 We've used napari to display the outputs of our initial explorations into PyImageJ, but ImageJ/Fiji are also graphically accessible through napari using the `napari-imagej` plugin. This napari plugin was designed to remove much of the hassle involved in executing ImageJ/Fiji functionality from Python - it handles all of the data conversion, providing the appearance of pure ImageJ/Fiji integration.
 
@@ -246,7 +269,7 @@ Using `napari-imagej`, we have access to all* of ImageJ/Fiji, much of which now 
 
 1. Download the image that we've been using so far: https://media.imagej.net/workshops/data/3d/hela_nucleus.tif
 2. From your computer's `Downloads` folder, drag and drop the image onto the napari viewer pane.
-3. In napari-imagej's search bar, type `gauss`.
+3. In `napari-imagej`'s search bar, type `gauss`.
 4. Under the `Ops` dropdown, you'll find `filter.gauss(img "out"?, img "in", number "sigma", outOfBoundsFactory "outOfBounds"?) -> (img "out"?)`. Double click this entry to bring up the parameter selection dialog.
 5. For the input, select `hela_nucleus`, and for the `sigma`, enter `10`. Just as we specified these fields as optional when scripting with PyImageJ, we can leave them blank here.
 6. Click `Ok`, and wait for the computation to finish. Note that in the `activity` pane in the bottom right hand corner of the napari window, `filter.gauss` will appear to notify you of its status.
@@ -257,28 +280,34 @@ Using this mechanism, you can run any ImageJ2 Command or Op, as well as any SciJ
 
 ## Step 6: Running our script again
 
-SciJava Scripts can be run in the `napari-imagej` UI, in addition to the utility they offer in ImageJ/Fiji and in Python scripts. With a bit of organization, described in the steps below, we can show `napari-imagej` how to find these scripts:
-1. Make a new `scripts` folder in your current directory. This directory is what ImageJ/Fiji looks for to discover all user scripts, and we will tell `napari-imagej` to look for this folder. Take the `decon.groovy` script that we wrote in Step 4, and place it within that `scripts` folder.
-2. Access the settings window within `napari-imagej`, by clicking the "gear" icon on the right. ImageJ/Fiji needs to know which directory **contains** the `scripts` folder, (i.e. **not** the `scripts` folder itself), and so the current directory, containing `hello_fiji.py`, is the one that we need to specify. Set the "ImageJ Base Directory" setting to the directory containing the `scripts` subfolder and `hello_fiji.py`.
-3. Restart napari and napari-imagej. On restart, ImageJ/Fiji will use this setting from `napari-imagej` to find our script contained within.
-
-Now that ImageJ/Fiji knows of our `decon.groovy` script, it will become available within the `napari-imagej` search results under the `Commands` dropdown. You will find the script by typing `decon` within the `napari-imagej` search bar. Click this result twice to open the parameter selection window. Note that `napari-imagej` is able to read the script parameters and creates either a pop window or an integrated widget.
-
-Select `hela_nucleus` in the parameter selection window, and then click `Ok` to run `decon.groovy`. While it runs, you can click the "activity" pane in napari to show current progress. Once it finishes, you will see the deconvolved result back in napari!
-
-## Step 7: Tracking with TrackMate in napari-imagej
-
-In the last step of this workshop, we will show how `napari-imagej` enables users to create complex workflows, using the UIs of and toolkits from both Fiji and napari. **This Step is currently inaccessible to MacOS users; please see Addendum 1 for more information**.
-
-To access our Fiji functionality, we must then alter the ImageJ2 installation used by `napari-imagej`, by clicking on the settings button:
+SciJava Scripts can also be run in the `napari-imagej` UI. With a bit of organization, described in the steps below, we can show `napari-imagej` how to find these scripts:
+1. Access the settings window within `napari-imagej`, by clicking the "gear" icon on the right (see image below). ImageJ/Fiji needs to know which directory **contains** the `scripts` folder, (i.e. **not** the `scripts` folder itself), and so the current directory `fiji-python-2024` is the one that we need to specify. Use the "ImageJ Base Directory" file chooser to set the setting to our `fiji-python-2024` directory, wherever that is within your filesystem.
+2. Restart napari and `napari-imagej`. On restart, ImageJ/Fiji will use this setting from `napari-imagej` to find our script `decon.groovy`.
 
 ![](https://media.imagej.net/napari-imagej/0.1.0/settings_wheel.png)
 
-Clicking this button will display a dialog where, among other things, we can enter a Fiji version, just like we did with PyImageJ.
+Now that ImageJ/Fiji knows of our `decon.groovy` script, it will become available within the `napari-imagej` search results under the `Commands` dropdown. Follow the steps below to execute this script on our HeLa cell sample image:
 
-**Under the "ImageJ directory or endpoint" setting, enter `sc.fiji:fiji:2.15.0`.**
+1. If the original HeLa cell dataset is not in napari, open it as you did before, either with drag-and-drop or by selecting it in a File Browser using `File->Open File(s)...`.
+2. In `napari-imagej`'s search bar, type `decon`.
+3. Under the `Commands` dropdown, you'll find `decon`. Click this result twice to open the parameter selection window.
+4. Select `hela_nucleus` as the `img` parameter, and leave all other parameters to their default setting.
+5. Click `Ok`, and wait for completion to finish. While it runs, you can click the "activity" pane in napari to show current progress.
 
-A restart of napari, by closing the window and then restarting napari and `napari-imagej`, will provide us with Fiji.
+Once it finishes, you will see the deconvolved result back in napari!
+
+## Step 7: Tracking with TrackMate in `napari-imagej`
+
+In the last step of this workshop, we will show how `napari-imagej` enables users to create complex workflows, using the UIs of and toolkits from both Fiji and napari. **This Step is currently inaccessible to MacOS users; please see Addendum 1 for more information**.
+
+Just as we had to tell PyImageJ to run Fiji instead of just ImageJ2, we must similarly tell `napari-imagej` to use Fiji, which we can do by following these steps:
+
+1. With `napari-imagej` running, click on the settings button (see image below):
+2. Under the "ImageJ directory or endpoint" setting, enter `sc.fiji:fiji:2.15.0`.
+3. Restart napari and `napari-imagej`.
+
+
+![](https://media.imagej.net/napari-imagej/0.1.0/settings_wheel.png)
 
 To run TrackMate itself within Fiji, follow the tutorial [here](https://napari.imagej.net/en/0.1.0/examples/trackmate.html#preparing-the-data), where the process is outlined more thoroughly than we could here.
 
@@ -424,4 +453,4 @@ We will run this script on [this image]("https://workshops.imagej.net/images/hel
   *  `hela_nucleus_8_bit` as the `img` parameter
   * Your determined vlaue as the `isolevel` parameter.
   
-Once the script finishes, the resulting `net.imagej.mesh.Mesh` will be converted into a napari `Surface` layer and will be displayed in the viewer. You can toggle the 3D rendering capabilities of napari-imagej using a button described [here](https://napari.org/stable/howtos/layers/surface.html#d-rendering).
+Once the script finishes, the resulting `net.imagej.mesh.Mesh` will be converted into a napari `Surface` layer and will be displayed in the viewer. You can toggle the 3D rendering capabilities of `napari-imagej` using a button described [here](https://napari.org/stable/howtos/layers/surface.html#d-rendering).
