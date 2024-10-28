@@ -7,7 +7,7 @@ The Python software ecosystem has become a platform of choice for many image ana
 * Have access to `mamba` (Installation instructions [here](https://mamba.readthedocs.io/en/latest/)) on a terminal on your machine.
 * Have *some interest* in using the Python programming language.
 
-![](https://media.imagej.net/napari-imagej/0.2.0/front_page.png)
+![](https://media.imagej.net/napari-imagej/0.1.0/front_page.png)
 
 *`napari` and ImageJ, working side by side*
 
@@ -240,7 +240,7 @@ We've used napari to display the outputs of our initial explorations into PyImag
 
 To use `napari-imagej`, launch napari by typing `napari` on your terminal. Once napari opens, go to the `Plugins` dropdown menu and click on the `ImageJ2 (napari-imagej)` menu item. `napari-imagej` will initialize the ImageJ2 instance for you, becoming "enabled" once the buttons become enabled.
 
-![](https://media.imagej.net/napari-imagej/startup.gif)
+![](https://media.imagej.net/napari-imagej/0.1.0/startup.gif)
 
 Using `napari-imagej`, we have access to all* of ImageJ/Fiji, much of which now available through a seamless napari interface. As a first look at this interface, let's run the exact same gaussian blur that we ran in Step 2, using `napari-imagej`:
 
@@ -272,7 +272,7 @@ In the last step of this workshop, we will show how `napari-imagej` enables user
 
 To access our Fiji functionality, we must then alter the ImageJ2 installation used by `napari-imagej`, by clicking on the settings button:
 
-![](https://media.imagej.net/napari-imagej/settings_wheel.png)
+![](https://media.imagej.net/napari-imagej/0.1.0/settings_wheel.png)
 
 Clicking this button will display a dialog where, among other things, we can enter a Fiji version, just like we did with PyImageJ.
 
@@ -290,7 +290,12 @@ This completes the Fiji + Python workshop! Using the ideas presented in this wor
 * Transfer data between Python and Java equivalents, enabling the execution of ImageJ/Fiji routines on data stored in Python objects, and vice versa
 * How to run scripts written for ImageJ/Fiji seamlessly within a Python script, or in napari, enabling workflow distribution, portability, and reproducibility.
 
-If you have any trouble, feel free to reach out on https://forum.image.sc - we're happy to help you resolve issues!
+We hope that, using the above concepts, you can now extend the presented scripts to integrate new, exciting Python tools with your existing Fiji needs!
+
+For more information and help, check out:
+* https://py.imagej.net for more information about PyImageJ
+* https://napari.imagej.net for more information about `napari-imagej`
+* https://forum.image.sc for interactive help about general image analysis problems - we're happy to help you resolve issues!
 
 ## Addendum 1: Launching the ImageJ/Fiji UI
 
@@ -298,9 +303,18 @@ One of the more useful features of PyImageJ is the ability to launch and interac
 
 PyImageJ offers two different mechanisms for launching a Fiji UI; users who wish to use **either** of these mechanisms must indicate so within the call to `imagej.init`:
 * `image.init(mode="gui")` tells PyImageJ to launch the ImageJ/Fiji UI **and block the Python thread until the user closes it**. If a user has PyImageJ installed, this is often the fastest way to launch a particular version of ImageJ/Fiji for quick experimentation.
+```python
+import imagej
+ij = imagej.init("sc.fiji:fiji:2.15.0", mode="gui")
+```
 * `image.init(mode="interactive")` tells PyImageJ to launch the ImageJ/Fiji UI **but returns control of the Python thread back to the user**. *This mechanism is unavailable on MacOS* due to the threading limitations.
+```python
+import imagej
+ij = imagej.init("sc.fiji:fiji:2.15.0", mode="interactive")
+```
 
-In addition, as shown in Step 7 of this workflow is the ability to 
+In addition, as shown in Step 7 of this workflow we can launch both the napari and ImageJ/Fiji UIs using a button within `napari-imagej`, using the button highlighted below. *This mechanism is **also** unavailable on MacOS* due to the threading limitations.
+![](https://media.imagej.net/napari-imagej/0.1.0/settings_gui_button.png)
 
 ## Addendum 2: Pitfalls in image conversion
 
@@ -356,3 +370,58 @@ ij.py.show(gaussed[30, :, :])
 
 Note that `ij.py.show` is capable of showing images stored in *both* Python *and* Java. Can you edit the cell to have PyImageJ display the same slice without the conversion back into Python?
 
+## Addendum 4: `Mesh` visualization in napari
+
+`napari-imagej` can additionally convert Fiji surface structures into napari `Surface` layers, providing a convenient solution for mesh/surface visualization using the napari viewer. The SciJava script written below, which converts a dataset containing a single structure in the foreground into a surface, showcases this conversion. 
+
+```python
+#@ OpService ops
+#@ Img img
+#@ Float (label = "Isolevel", style = "format:0.00", min = 1.0, value = 1.0) isolevel
+#@output net.imagej.mesh.Mesh output
+
+from net.imglib2.type.logic import BitType
+
+def apply_isolevel(image, isolevel):
+    """Apply the desired isolevel on the input image.
+
+    Apply a desired isolevel (i.e. isosurface) value on the input image,
+    returning a BitType image that can be used with the marching cubes Op.
+
+    :param image:
+
+        Input ImgPlus.
+
+    :param isolevel:
+
+        Input isolevel value (float).
+
+    :return:
+
+        An ImgLib2 Mesh at the specified isolevel.
+    """
+    if isolevel > 1.0:
+        isolevel -= 1
+    val = image.firstElement().copy()
+    val.setReal(isolevel)
+    bin_img = ops.create().img(image, BitType())
+    ops.threshold().apply(bin_img, image, val)
+
+    return ops.geom().marchingCubes(bin_img)
+
+
+output = apply_isolevel(img, isolevel)
+```
+
+We will run this script on [this image]("https://workshops.imagej.net/images/hela_nucleus_8_bit.tif), the same dataset used throughout the workshop, but reduced to unsigned 8-bit integers to avoid [this issue](https://github.com/imagej/napari-imagej/issues/276) which affects our version of `napari-imagej`. Use the following steps to set up this script for execution on the sample dataset:
+
+1. Create a new file `mesh.py` in the `scripts` folder where the other scripts were placed, and copy the above script into the new file. 
+2. Start napari and `napari-imagej` if they are not running
+3. Load our reduced image into the viewer
+4. Determine the surface `isolevel`, **the value below which a particular location will be considered "below" the mesh**. You can mouse over the image using napari to find an appropriate isolevel near the edge of the main structure.
+5. Search for `mesh` in the `napari-imagej` search bar. The script will appear under the `Commands` result tab.
+6. Double-click the `mesh` search result. Specify:
+  *  `hela_nucleus_8_bit` as the `img` parameter
+  * Your determined vlaue as the `isolevel` parameter.
+  
+Once the script finishes, the resulting `net.imagej.mesh.Mesh` will be converted into a napari `Surface` layer and will be displayed in the viewer. You can toggle the 3D rendering capabilities of napari-imagej using a button described [here](https://napari.org/stable/howtos/layers/surface.html#d-rendering).
