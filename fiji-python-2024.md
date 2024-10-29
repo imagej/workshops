@@ -347,14 +347,18 @@ In addition, as shown in Step 7 of this workflow we can launch both the napari a
 
 ## Addendum 2: Pitfalls in image conversion
 
-While NumPy `ndarray`s provide many benefits throughout the Python ecosystem, they do not have a defined mechanism for image metadata. This means that many images stored within numpy arrays rely on [conventions](https://scikit-image.org/docs/stable/user_guide/numpy_images.html#coordinate-conventions) to convey the meaning of each dimension, but these conventions pose two problems for Python + Fiji integration:
+While NumPy `ndarray`s provide many benefits throughout the Python ecosystem, they do not support image metadata. This means that many images stored within numpy arrays rely on [dimension conventions](https://scikit-image.org/docs/stable/user_guide/numpy_images.html#a-note-on-the-time-dimension) to indicate the dimension label (_e.g._ X, Y, Channel, _etc_.). Unfortunately, these dimension conventions and lack of metadata pose three problems for Python + Fiji integration:
 
-	1. The conventions do not align with the conventions of ImageJ - for example, grayscale images are represented as `(Y, X)` with the NumPy conventions, but as `(X, Y)` within ImageJ/Fiji.
-	2. There is no way to enforce these conventions.
+1. Python/NumPy preferred image dimensions do not align with Fiji/ImageJ.
+    - Python/NumPy order: `(t, pln, row, col, ch)` or `(T, Z, Y, X, C)`.
+    - Fiji/ImageJ order: `(col, row, ch, pln, t)` or `(X, Y, C, Z, T)`.
+    - Special care must be taken to permute/transform array shape to conform to each ecosystem's standard.
+2. Non-standard NumPy order will be impossible to determine without additional dimension data (_i.e._ extra metadata indicating dimension labels).
+3. NumPy arrays can't produce calibrated values for measurements (no metadata).
 
-To solve the first problem, PyImageJ converts different Python data structures differently, *depending on whether or not they have dimensional metadata*. Some data structures, like [`xarray`](https://docs.xarray.dev/en/stable/)s, have that data, and PyImageJ can use that data to correctly order the dimensions when converting to Java data structures. If the data structure is a pure NumPy `ndarray` though, it does not have this metadata, and PyImageJ permutes the dimensions according to those conventions.
+To alleviate this problem, PyImageJ offers a set of convience functions to assit in correctly converting between Python and Fiji dimension order. Notably, PyImageJ uses [`xarray`](https://docs.xarray.dev/en/stable/index.html), which supports metadata and calibrated values (_i.e._ the image calibration or pixel size), as the Python analog to ImageJ datasets. `xarray.DataArray`s (which are NumPy arrays wrapped by xarray) that have dimension labels can be properly used by PyImageJ to re-order the data into an ImageJ preferred order. Or NumPy arrays with an accompanying dimension order `List` can also be used with PyImageJ to indicate dimension order information. Conversely, sending data to Python with PyImageJ produces, typically, an `xarray.DataArray` with dimension labels and calibrated values.
 
-To solve the second problem, we suggest using metadata-rich data structures like `xarray` to encode the dimensions within your datasets.
+For more information about PyImageJ's convenience methods, see [5 Convenience methods of PyImageJ](https://py.imagej.net/en/latest/05-Convenience-methods-of-PyImageJ.html) in the PyImageJ docs. For more information about sending data to and from Python using PyImageJ, see [6 Working with Images](https://py.imagej.net/en/latest/06-Working-with-Images.html).
 
 ## Addendum 3: Jupyter Notebook
 
