@@ -271,7 +271,7 @@ Using `napari-imagej`, we have access to all* of ImageJ/Fiji, much of which now 
 2. From your computer's `Downloads` folder, drag and drop the image onto the napari viewer pane.
 3. In `napari-imagej`'s search bar, type `gauss`.
 4. Under the `Ops` dropdown, you'll find `filter.gauss(img "out"?, img "in", number "sigma", outOfBoundsFactory "outOfBounds"?) -> (img "out"?)`. Double click this entry to bring up the parameter selection dialog.
-5. For the input, select `hela_nucleus`, and for the `sigma`, enter `10`. Just as we specified these fields as optional when scripting with PyImageJ, we can leave them blank here.
+5. For the input, select `hela_nucleus`, and for the `sigma`, enter `10`. Just as we specified the `out` and `outOfBounds` parameters as optional when scripting with PyImageJ, we can leave them blank here.
 6. Click `Ok`, and wait for the computation to finish. Note that in the `activity` pane in the bottom right hand corner of the napari window, `filter.gauss` will appear to notify you of its status.
 
 Using this mechanism, you can run any ImageJ2 Command or Op, as well as any SciJava Script (as seen in the next step), using a pure napari interface, and none of the extra `ij.py` function calls to make everything work out!
