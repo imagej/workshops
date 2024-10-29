@@ -389,7 +389,7 @@ Jupyter users will find PyImageJ utility function `ij.py.show` particularly usef
 ```python
 from skimage.io import imread
 
-ij = imagej.init("sc.fiji:fiji:1.15.0")
+ij = imagej.init("sc.fiji:fiji:2.15.0")
 
 p_img = imread("https://media.imagej.net/workshops/data/3d/hela_nucleus.tif")
 # Convert our image to Java and do stuff in Fiji
