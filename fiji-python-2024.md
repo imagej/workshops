@@ -216,7 +216,7 @@ result = ops.deconvolve().richardsonLucyTV(img_f, psf, iterations, regularizatio
 You can follow the steps below to run the script:
 
 1. Create a folder `scripts` within the current directory `fiji-python-2024`
-1. Within the `scripts` folder Create a new file `decon.groovy` containing the above code.
+1. Within the `scripts` folder, create a new file `decon.groovy` containing the above code.
 2. Create a new file `step4.py` with the code below.
 
 ```python
