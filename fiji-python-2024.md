@@ -410,7 +410,7 @@ Note that `ij.py.show` is capable of showing images stored in *both* Python *and
 ```python
 #@ OpService ops
 #@ Img img
-#@ Float (label = "Isolevel", style = "format:0.00", min = 1.0, value = 1.0) isolevel
+#@ net.imglib2.type.numeric.real.FloatType (label = "Isolevel", style = "format:0.00", min = 1.0, value = 1.0) isolevel
 #@output net.imagej.mesh.Mesh output
 
 from net.imglib2.type.logic import BitType
@@ -427,16 +427,17 @@ def apply_isolevel(image, isolevel):
 
     :param isolevel:
 
-        Input isolevel value (float).
+        Input isolevel value (FloatType).
 
     :return:
 
         An ImgLib2 Mesh at the specified isolevel.
     """
-    if isolevel > 1.0:
-        isolevel -= 1
+    i = isolevel.getRealDouble()
+    if i > 1.0:
+        i -= 1
     val = image.firstElement().copy()
-    val.setReal(isolevel)
+    val.setReal(i)
     bin_img = ops.create().img(image, BitType())
     ops.threshold().apply(bin_img, image, val)
 
@@ -446,7 +447,7 @@ def apply_isolevel(image, isolevel):
 output = apply_isolevel(img, isolevel)
 ```
 
-We will run this script on [this image]("https://workshops.imagej.net/images/hela_nucleus_8_bit.tif), the same dataset used throughout the workshop, but reduced to unsigned 8-bit integers to avoid [this issue](https://github.com/imagej/napari-imagej/issues/276) which affects our version of `napari-imagej`. Use the following steps to set up this script for execution on the sample dataset:
+We will run this script on [this image](https://media.imagej.net/workshops/data/3d/hela_nucleus.tif), the same dataset used throughout the workshop. Use the following steps to set up this script for execution on the sample dataset:
 
 1. Create a new file `mesh.py` in the `scripts` folder where the other scripts were placed, and copy the above script into the new file. 
 2. Start napari and `napari-imagej` if they are not running
