@@ -450,8 +450,8 @@ output = apply_isolevel(img, isolevel)
 We will run this script on [this image](https://media.imagej.net/workshops/data/3d/hela_nucleus.tif), the same dataset used throughout the workshop. Use the following steps to set up this script for execution on the sample dataset:
 
 1. Create a new file `mesh.py` in the `scripts` folder where the other scripts were placed, and copy the above script into the new file. 
-2. Start napari and `napari-imagej` if they are not running
-3. Load our reduced image into the viewer
+2. Start napari and `napari-imagej` if they are not running.
+3. Load the dataset into the viewer if it is not loaded already.
 4. Determine the surface `isolevel`, **the value below which a particular location will be considered "below" the mesh**. You can mouse over the image using napari to find an appropriate isolevel near the edge of the main structure.
 5. Search for `mesh` in the `napari-imagej` search bar. The script will appear under the `Commands` result tab.
 6. Double-click the `mesh` search result. Specify:
